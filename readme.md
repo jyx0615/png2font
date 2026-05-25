@@ -29,7 +29,7 @@ Notes:
 
 - Defaults live in [config.toml](config.toml). Key settings:
   - `[font].upm` — units-per-em used when normalizing SVGs (default 1000).
-  - `[font].advance_width` — monospace advance width assigned to each glyph.
+  - `[font].advance_width` — monospace advance width assigned to each glyph. Lower values make characters sit closer together; try 800 for a tighter font.
   - `[font].fontname`, `[font].fullname`, `[font].familyname` — default font naming.
 
 CLI arguments override values in `config.toml`. Precedence: CLI > `config.toml`.

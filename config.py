@@ -10,7 +10,7 @@ except ModuleNotFoundError:  # pragma: no cover
 @dataclass(frozen=True)
 class FontConfig:
     upm: int = 1000
-    advance_width: int = 1000
+    advance_width: int = 800
     fontname: str = "MyCustomFont"
     fullname: str = "My Custom Font"
     familyname: str = "My Family"
@@ -27,9 +27,7 @@ def load_config(config_path: str | Path = "config.toml") -> FontConfig:
     font_settings = data.get("font", {})
     return FontConfig(
         upm=int(font_settings.get("upm", 1000)),
-        advance_width=int(
-            font_settings.get("advance_width", font_settings.get("upm", 1000))
-        ),
+        advance_width=int(font_settings.get("advance_width", 800)),
         fontname=str(font_settings.get("fontname", "MyCustomFont")),
         fullname=str(font_settings.get("fullname", "My Custom Font")),
         familyname=str(font_settings.get("familyname", "My Family")),

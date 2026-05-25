@@ -1,6 +1,6 @@
 [font]
 upm = 1000
-advance_width = 1000
-fontname = "MyCustomFont"
-fullname = "My Custom Font"
-familyname = "My Family"
+advance_width = 800
+fontname = "MyCustomFont2"
+fullname = "My Custom Font2"
+familyname = "My Family2"
