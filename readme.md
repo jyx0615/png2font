@@ -6,6 +6,8 @@
 
 **Quick setup (recommended with conda)**
 
+Before running anything else, install FontForge first. The project depends on the `fontforge` CLI, and the official install instructions are here: https://github.com/fontforge/fontforge/blob/master/INSTALL.md
+
 ```bash
 conda create -n genFont python=3.11 -y
 conda activate genFont

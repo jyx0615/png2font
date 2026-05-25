@@ -65,9 +65,6 @@ font2/
 *.ttf
 *.otf
 
-## Native tools / binaries you might put in the project root
-svgcleaner
-
 ## Logs and temp
 *.log
 *.tmp
