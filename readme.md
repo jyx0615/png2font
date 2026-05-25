@@ -11,7 +11,7 @@ Before running anything else, install FontForge first. The project depends on th
 ```bash
 conda create -n genFont python=3.11 -y
 conda activate genFont
-pip install -r requirementst.txt
+pip install -r requirements.txt
 
 ./run.sh [PNG_FOLDER] [FONTNAME]
 # Examples
