@@ -1,4 +1,4 @@
-**Project README**
+# png2font
 
 **Purpose**
 
@@ -10,6 +10,11 @@
 conda create -n genFont python=3.11 -y
 conda activate genFont
 pip install -r requirementst.txt
+
+./run.sh [PNG_FOLDER] [FONTNAME]
+# Examples
+./run.sh                # use `glyphs` and fontname from config.toml
+./run.sh my_pngs MyType # use folder `my_pngs` and produce `MyType.ttf`
 ```
 
 Notes:
@@ -53,6 +58,18 @@ CLI arguments override values in `config.toml`. Precedence: CLI > `config.toml`.
 - `font.py` (via `fontforge -script`) imports SVGs, scales and vertically offsets each glyph to fit the em square, sets each glyph's `width` to `advance_width` from `config.toml` (making the font monospace), and writes `<fontname>.ttf`.
 - `addsvg` embeds the SVG outlines back into the produced TTF to create a color-capable font.
 
+**Visual proof**
+
+The first image shows the source PNG glyph set, and the second image shows the generated font installed and used directly in macOS Pages.
+
+<p align="center">
+  <img src="assets/png.png" alt="Source PNG glyphs" width="900" />
+</p>
+
+<p align="center">
+  <img src="assets/pages.png" alt="Generated font used in macOS Pages" width="900" />
+</p>
+
 **Troubleshooting**
 
 - If `fontforge` Python imports crash or segfault when run inside the interpreter, run `fontforge -script font.py` instead (this is the supported invocation here).
@@ -68,6 +85,6 @@ If you want any of the optional items, tell me which and I will add them.
 
 **Credits**
 
-- svgcleaner — RazrFalcon (SVG cleaning and normalization): https://github.com/RazrFalcon/svgcleaner
-- FontForge — FontForge project (font editing and scripting): https://fontforge.org/
-- addsvg / OpenType-SVG — Adobe type tools (SVG embedding into fonts): https://github.com/adobe-type-tools/opentype-svg
+- [svgcleaner](https://github.com/RazrFalcon/svgcleaner) — RazrFalcon (SVG cleaning and normalization)
+- [FontForge](https://fontforge.org/) — FontForge project (font editing and scripting)
+- [addsvg / OpenType-SVG](https://github.com/adobe-type-tools/opentype-svg) — Adobe type tools (SVG embedding into fonts)
