@@ -24,6 +24,21 @@ def normalize_svg_root(svg_path: str) -> str:
     return temp_path
 
 
+def create_empty_svg(
+    svg_output_path: Path, width: int = UPM, height: int = UPM
+) -> None:
+    root = ET.Element(
+        f"{{{SVG_NS}}}svg",
+        {
+            "width": str(width),
+            "height": str(height),
+            "viewBox": f"0 -{height} {width} {height}",
+        },
+    )
+    tree = ET.ElementTree(root)
+    tree.write(svg_output_path, encoding="utf-8", xml_declaration=False)
+
+
 def wrap_png_to_svg(png_path, svg_output_path, width=150, height=150, target_upm=UPM):
     with tempfile.NamedTemporaryFile(suffix=".svg", delete=False) as temp_file:
         temp_svg_path = temp_file.name
@@ -79,7 +94,9 @@ def wrap_png_to_svg(png_path, svg_output_path, width=150, height=150, target_upm
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Convert PNG glyphs to normalized SVGs.")
+    parser = argparse.ArgumentParser(
+        description="Convert PNG glyphs to normalized SVGs."
+    )
     parser.add_argument(
         "--png_folder",
         dest="png_folder",
@@ -105,6 +122,10 @@ def main() -> None:
         svg_output_path = svg_output_directory / new_file_name
         wrap_png_to_svg(png_path, svg_output_path)
         print(f"Converted {filename} to SVG format.")
+
+    space_svg_output_path = svg_output_directory / "u0020.svg"
+    create_empty_svg(space_svg_output_path)
+    print("Created empty space SVG to preserve monospace width.")
 
 
 if __name__ == "__main__":
