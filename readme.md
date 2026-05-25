@@ -1,0 +1,73 @@
+**Project README**
+
+**Purpose**
+
+- Convert bitmap glyph PNGs into normalized SVG glyphs and assemble them into a monospace TTF. Optionally embed SVG outlines into the TTF for color/SVG-capable fonts.
+
+**Quick setup (recommended with conda)**
+
+```bash
+conda create -n genFont python=3.11 -y
+conda activate genFont
+pip install -r requirementst.txt
+```
+
+Notes:
+
+- `svgcleaner` is a native binary; download it from https://github.com/RazrFalcon/svgcleaner/releases and place it in the project root, then run `chmod +x svgcleaner`.
+- `fontforge` is required for generating TTFs; install via conda or your package manager and use the CLI (`fontforge -script ...`).
+- `addsvg` (from opentype-svg tools) is used to embed SVG outlines into the generated TTF.
+
+**Configuration**
+
+- Defaults live in [config.toml](config.toml). Key settings:
+  - `[font].upm` — units-per-em used when normalizing SVGs (default 1000).
+  - `[font].advance_width` — monospace advance width assigned to each glyph.
+  - `[font].fontname`, `[font].fullname`, `[font].familyname` — default font naming.
+
+CLI arguments override values in `config.toml`. Precedence: CLI > `config.toml`.
+
+**Scripts & usage**
+
+- `png2svg.py` — trace PNGs to normalized SVGs.
+  - Default: `python3 png2svg.py`
+  - Options: `--png_folder <dir>` and `--svg_output <dir>` (defaults: `glyphs`, `svg_glyphs`).
+- `font.py` — FontForge script that imports SVGs and generates `<fontname>.ttf`.
+  - Default: `fontforge -script font.py` (reads naming from `config.toml`).
+  - Override font names: `fontforge -script font.py svg_glyphs --fontname MyFont`.
+- `rename.py` — map SVG filenames to AGL glyph names and copy into `renamed_svg_glyphs/`.
+- `run.sh` — end-to-end pipeline wrapper. Usage:
+
+```bash
+./run.sh [PNG_FOLDER] [FONTNAME]
+# Examples
+./run.sh                # use `glyphs` and fontname from config.toml
+./run.sh my_pngs MyType # use folder `my_pngs` and produce `MyType.ttf`
+```
+
+**Pipeline (what each step does)**
+
+- `png2svg.py`: uses VTracer to convert PNG → temporary SVG, wraps artwork in a <g> transform so baseline is at y=0, sets viewBox to `0 -UPM UPM UPM` and writes a fixed `width`/`height` equal to `UPM` so all glyphs share the same canvas.
+- `svgcleaner` is run to normalize and compact the SVGs into `svg_glyphs/`.
+- `rename.py` or `clean.py` can be used to convert filenames to AGL names or canonical `uXXXX.svg` forms and place them into `renamed_svg_glyphs/` for packaging.
+- `font.py` (via `fontforge -script`) imports SVGs, scales and vertically offsets each glyph to fit the em square, sets each glyph's `width` to `advance_width` from `config.toml` (making the font monospace), and writes `<fontname>.ttf`.
+- `addsvg` embeds the SVG outlines back into the produced TTF to create a color-capable font.
+
+**Troubleshooting**
+
+- If `fontforge` Python imports crash or segfault when run inside the interpreter, run `fontforge -script font.py` instead (this is the supported invocation here).
+- If a Python package (`vtracer`, `tomli`, etc.) is missing, install it into the same environment running the scripts.
+- Ensure `svgcleaner` is executable and present in the project root.
+
+**Next steps / optional improvements**
+
+- I can add an `environment.yml` or `requirements.txt` that pins known-good package versions for reproducible environments.
+- Add a small test harness that runs the pipeline in a dry-run and reports produced glyph counts and warnings.
+
+If you want any of the optional items, tell me which and I will add them.
+
+**Credits**
+
+- svgcleaner — RazrFalcon (SVG cleaning and normalization): https://github.com/RazrFalcon/svgcleaner
+- FontForge — FontForge project (font editing and scripting): https://fontforge.org/
+- addsvg / OpenType-SVG — Adobe type tools (SVG embedding into fonts): https://github.com/adobe-type-tools/opentype-svg
