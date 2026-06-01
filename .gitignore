@@ -65,6 +65,8 @@ font2/
 *.ttf
 *.otf
 
+glyphs*/
+
 ## Logs and temp
 *.log
 *.tmp

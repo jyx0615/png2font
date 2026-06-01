@@ -5,6 +5,7 @@ from pathlib import Path
 import vtracer
 import subprocess
 import argparse
+from PIL import Image
 
 from config import CONFIG
 
@@ -39,16 +40,67 @@ def create_empty_svg(
     tree.write(svg_output_path, encoding="utf-8", xml_declaration=False)
 
 
+UPSCALE_FACTOR = 4  # Lanczos upscale multiplier before tracing
+
+
+def upscale_png(png_path: Path, scale: int = UPSCALE_FACTOR, alpha_threshold: int = 128) -> str:
+    """Return path to a temp PNG upscaled by `scale`x using Lanczos resampling.
+
+    Order of operations:
+      1. Upscale first with Lanczos so edge gradients are interpolated smoothly.
+      2. Then apply a hard binary alpha threshold on the high-res image to
+         eliminate the anti-aliased fringe — without the jaggies you'd get
+         from thresholding before upscaling.
+    """
+    img = Image.open(png_path).convert("RGBA")
+
+    # Step 1: Upscale with Lanczos for maximum sharpness
+    new_size = (img.width * scale, img.height * scale)
+    upscaled = img.resize(new_size, Image.LANCZOS)
+
+    # Step 2: Hard-edge alpha on the high-res image to kill the anti-aliased fringe
+    r, g, b, a = upscaled.split()
+    hard_alpha = a.point(lambda v: 255 if v >= alpha_threshold else 0)
+    upscaled = Image.merge("RGBA", (r, g, b, hard_alpha))
+
+    handle, tmp_path = tempfile.mkstemp(suffix=".png")
+    os.close(handle)
+    upscaled.save(tmp_path, format="PNG")
+    return tmp_path
+
+
 def wrap_png_to_svg(png_path, svg_output_path, width=150, height=150, target_upm=UPM):
     with tempfile.NamedTemporaryFile(suffix=".svg", delete=False) as temp_file:
         temp_svg_path = temp_file.name
 
+    # Upscale PNG before tracing so vtracer has more pixels to work with
+    upscaled_png_path = upscale_png(png_path)
+
     try:
-        vtracer.convert_image_to_svg_py(str(png_path), str(temp_svg_path))
+        vtracer.convert_image_to_svg_py(
+            upscaled_png_path,
+            str(temp_svg_path),
+            colormode="color",          # Preserve original colors
+            hierarchical="cutout",      # Cutout mode avoids layering gaps that cause holes
+            mode="polygon",             # Polygon mode: FontForge-safe (spline causes SSAddPoints crash)
+            filter_speckle=2,           # Minimal speckle removal — preserves more regions
+            color_precision=6,          # Fewer clusters → larger solid fills → no gaps
+            corner_threshold=25,        # Capture sharper corners (default 60 is too blunt)
+            length_threshold=2.0,       # Finer segment resolution for sharper edges
+            splice_threshold=45,        # Prevent unwanted spline loops at corners
+        )
 
         tree = ET.parse(temp_svg_path)
         root = tree.getroot()
         namespace = root.tag[1:].split("}", 1)[0] if root.tag.startswith("{") else ""
+
+        # In cutout mode vtracer always inserts a background fill rectangle as the
+        # very first <path> child. Strip it so it doesn't appear as a solid colour
+        # block behind the glyph (the PNG already carries proper transparency).
+        path_tag = f"{{{namespace}}}path" if namespace else "path"
+        children = list(root)
+        if children and children[0].tag == path_tag:
+            root.remove(children[0])
 
         view_box = root.attrib.get("viewBox")
         if view_box:
@@ -91,6 +143,8 @@ def wrap_png_to_svg(png_path, svg_output_path, width=150, height=150, target_upm
     finally:
         if os.path.exists(temp_svg_path):
             os.remove(temp_svg_path)
+        if os.path.exists(upscaled_png_path):
+            os.remove(upscaled_png_path)
 
 
 def main() -> None:
