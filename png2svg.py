@@ -43,14 +43,30 @@ def create_empty_svg(
 UPSCALE_FACTOR = 4  # Lanczos upscale multiplier before tracing
 
 
+def _is_near_white(color: str, threshold: int = 230) -> bool:
+    """Return True if `color` (CSS hex) is near-white."""
+    c = color.strip().lstrip("#").lower()
+    if c in ("fff", "ffffff", "white"):
+        return True
+    if len(c) == 6:
+        try:
+            r, g, b = int(c[0:2], 16), int(c[2:4], 16), int(c[4:6], 16)
+            return r >= threshold and g >= threshold and b >= threshold
+        except ValueError:
+            pass
+    return False
+
+
 def upscale_png(png_path: Path, scale: int = UPSCALE_FACTOR, alpha_threshold: int = 128) -> str:
     """Return path to a temp PNG upscaled by `scale`x using Lanczos resampling.
 
     Order of operations:
       1. Upscale first with Lanczos so edge gradients are interpolated smoothly.
-      2. Then apply a hard binary alpha threshold on the high-res image to
-         eliminate the anti-aliased fringe — without the jaggies you'd get
-         from thresholding before upscaling.
+      2. Apply a hard binary alpha threshold on the high-res image.
+      3. Composite glyph over a pure-white background so that transparent pixels
+         carry white RGB values. vtracer then sees clean white in those areas
+         instead of bleed colours from PNG anti-aliasing, ensuring any background
+         layer it generates is reliably white (and safe to remove later).
     """
     img = Image.open(png_path).convert("RGBA")
 
@@ -61,7 +77,15 @@ def upscale_png(png_path: Path, scale: int = UPSCALE_FACTOR, alpha_threshold: in
     # Step 2: Hard-edge alpha on the high-res image to kill the anti-aliased fringe
     r, g, b, a = upscaled.split()
     hard_alpha = a.point(lambda v: 255 if v >= alpha_threshold else 0)
-    upscaled = Image.merge("RGBA", (r, g, b, hard_alpha))
+
+    # Step 3: Paste glyph over white so transparent pixels' RGB becomes white.
+    # This prevents vtracer from picking up bleed colours from the transparent
+    # border pixels and generating a coloured background layer.
+    white_bg = Image.new("RGBA", upscaled.size, (255, 255, 255, 255))
+    white_bg.paste(upscaled, mask=hard_alpha)   # glyph over white; transparent → white RGB
+    r_clean, g_clean, b_clean, _ = white_bg.split()
+    # Re-attach the binary alpha so the PNG still carries proper transparency
+    upscaled = Image.merge("RGBA", (r_clean, g_clean, b_clean, hard_alpha))
 
     handle, tmp_path = tempfile.mkstemp(suffix=".png")
     os.close(handle)
@@ -94,13 +118,18 @@ def wrap_png_to_svg(png_path, svg_output_path, width=150, height=150, target_upm
         root = tree.getroot()
         namespace = root.tag[1:].split("}", 1)[0] if root.tag.startswith("{") else ""
 
-        # In cutout mode vtracer always inserts a background fill rectangle as the
-        # very first <path> child. Strip it so it doesn't appear as a solid colour
-        # block behind the glyph (the PNG already carries proper transparency).
+        # Remove the first <path> only if it is a near-white background fill.
+        # In cutout mode vtracer injects a background rectangle as the first child;
+        # since we pre-filled transparent pixels with white, that rectangle will
+        # always have a near-white fill and can be safely stripped.
+        # Non-white first paths (e.g. the purple body of a donut glyph) are left
+        # untouched so we don't clip the actual glyph.
         path_tag = f"{{{namespace}}}path" if namespace else "path"
         children = list(root)
         if children and children[0].tag == path_tag:
-            root.remove(children[0])
+            fill = children[0].attrib.get("fill", "")
+            if _is_near_white(fill):
+                root.remove(children[0])
 
         view_box = root.attrib.get("viewBox")
         if view_box:
