@@ -138,7 +138,11 @@ def wrap_png_to_svg(png_path, svg_output_path, width=150, height=150, target_upm
             source_width = float(root.attrib.get("width", width))
             source_height = float(root.attrib.get("height", height))
 
+        # Scale by height only — preserves the PNG's natural aspect ratio so
+        # that narrow glyphs ("I", "l") stay narrow and wide ones ("W", "M")
+        # stay wide.  The SVG width reflects the actual glyph advance width.
         scale = target_upm / source_height
+        scaled_width = round(source_width * scale)
 
         children = list(root)
 
@@ -155,8 +159,8 @@ def wrap_png_to_svg(png_path, svg_output_path, width=150, height=150, target_upm
             wrapper.append(child)
 
         root.append(wrapper)
-        root.set("viewBox", f"0 -{target_upm} {target_upm} {target_upm}")
-        root.set("width", str(target_upm))
+        root.set("viewBox", f"0 -{target_upm} {scaled_width} {target_upm}")
+        root.set("width", str(scaled_width))
         root.set("height", str(target_upm))
 
         ET.indent(tree, space="  ")

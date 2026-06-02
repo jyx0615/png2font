@@ -11,8 +11,6 @@ font.fontname = CONFIG.fontname
 font.fullname = CONFIG.fullname
 font.familyname = CONFIG.familyname
 svg_folder = "svg_glyphs/"  # 存放 SVG 字圖的資料夾
-VERTICAL_RAISE = 120
-MONOSPACE_WIDTH = CONFIG.advance_width
 
 
 def svg_filename_to_codepoint(filename: str) -> int:
@@ -49,18 +47,19 @@ def import_glyphs_from_svg(folder):
             height = ymax - ymin
 
             if width > 0 and height > 0:
-                scale = min(CONFIG.upm / width, CONFIG.upm / height)
-                glyph.transform(
-                    (
-                        scale,
-                        0,
-                        0,
-                        scale,
-                        -xmin * scale,
-                        (-ymin * scale) + VERTICAL_RAISE,
-                    )
-                )
-            glyph.width = MONOSPACE_WIDTH
+                # png2svg.py already scaled every SVG so that the PNG canvas
+                # height maps to UPM — all glyphs share the same vertical
+                # reference.  Do NOT re-scale here; that would blow up short
+                # glyphs (=, –, …) to enormous widths.
+                # Just shift the glyph so its left ink edge starts at x = 0.
+                glyph.transform((1, 0, 0, 1, -xmin, 0))
+
+            if char_code == 32:
+                glyph.width = CONFIG.space_width
+            else:
+                # Advance width = actual ink width (no sidebearing).
+                xmin2, _, xmax2, _ = glyph.boundingBox()
+                glyph.width = max(1, round(xmax2 - xmin2))
             print(
                 f"Successfully imported {filename} to Unicode {char_code} {chr(char_code)}"
             )
