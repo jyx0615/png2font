@@ -1,6 +1,7 @@
 [font]
 upm = 1000
 advance_width = 600
-fontname = "MyCustomFont"
-fullname = "My Custom Font"
-familyname = "My Family"
+space_width = 250
+fontname = "black"
+fullname = "black"
+familyname = "black"
