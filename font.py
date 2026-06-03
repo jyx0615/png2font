@@ -5,12 +5,33 @@ import argparse
 
 from config import CONFIG
 
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("svg_folder", nargs="?", default="svg_glyphs/")
+    parser.add_argument("--fontname")
+    parser.add_argument("--fullname")
+    parser.add_argument("--familyname")
+    return parser.parse_args()
+
+
+def resolve_config(args: argparse.Namespace) -> tuple[str, str, str, str]:
+    fontname = args.fontname or CONFIG.fontname
+    fullname = args.fullname or CONFIG.fullname
+    familyname = args.familyname or CONFIG.familyname
+    return args.svg_folder, fontname, fullname, familyname
+
+
 # 建立新的字型專案
+ARGS = parse_args()
+SVG_FOLDER, fontname, fullname, familyname = resolve_config(ARGS)
+
 font = fontforge.font()
-font.fontname = CONFIG.fontname
-font.fullname = CONFIG.fullname
-font.familyname = CONFIG.familyname
-svg_folder = "svg_glyphs/"  # 存放 SVG 字圖的資料夾
+font.encoding = "UnicodeFull"
+font.fontname = fontname
+font.fullname = fullname
+font.familyname = familyname
+svg_folder = SVG_FOLDER  # 存放 SVG 字圖的資料夾
 
 
 def svg_filename_to_codepoint(filename: str) -> int:

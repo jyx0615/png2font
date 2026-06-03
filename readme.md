@@ -41,7 +41,7 @@ CLI arguments override values in `config.toml`. Precedence: CLI > `config.toml`.
   - Options: `--png_folder <dir>` and `--svg_output <dir>` (defaults: `glyphs`, `svg_glyphs`).
 - `font.py` — FontForge script that imports SVGs and generates `<fontname>.ttf`.
   - Default: `fontforge -script font.py` (reads naming from `config.toml`).
-  - Override font names: `fontforge -script font.py svg_glyphs --fontname MyFont`.
+  - Override font names: `fontforge -script font.py svg_glyphs --fontname MyFont --fullname "My Font" --familyname "My Family"`.
 - `rename.py` — map SVG filenames to AGL glyph names and copy into `renamed_svg_glyphs/`.
 - `run.sh` — end-to-end pipeline wrapper. Usage:
 

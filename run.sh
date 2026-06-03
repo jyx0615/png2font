@@ -1,6 +1,27 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Start the png2font FastAPI Server
+echo "================================================================="
+echo "  📦 Conda Environment: genFont"
+echo "================================================================="
+
+# Source Conda setup script to enable 'conda activate' inside subshells
+if [ -f "/opt/miniconda3/etc/profile.d/conda.sh" ]; then
+    source "/opt/miniconda3/etc/profile.d/conda.sh"
+elif [ -f "$HOME/miniconda3/etc/profile.d/conda.sh" ]; then
+    source "$HOME/miniconda3/etc/profile.d/conda.sh"
+elif [ -f "$HOME/anaconda3/etc/profile.d/conda.sh" ]; then
+    source "$HOME/anaconda3/etc/profile.d/conda.sh"
+else
+    # Fallback to conda's shell integration hook
+    eval "$(conda shell.bash hook)"
+fi
+
+# Activate the conda environment correctly
+conda activate genFont
+
+
 # Usage: ./run.sh [PNG_FOLDER] [FONTNAME]
 # Defaults: PNG_FOLDER=glyphs, FONTNAME from config.toml or MyCustomFont
 
@@ -27,7 +48,7 @@ echo "Converting PNGs in '${PNG_FOLDER}' to SVGs..."
 python3 png2svg.py --png_folder "${PNG_FOLDER}" --svg_output "svg_glyphs"
 
 echo "Generating TTF from svg_glyphs with fontname='${FONTNAME}'..."
-fontforge -script font.py svg_glyphs --fontname "${FONTNAME}"
+fontforge -script font.py svg_glyphs --fontname "${FONTNAME}" --fullname "${FONTNAME}" --familyname "${FONTNAME}"
 
 echo "Embedding SVGs into ${FONTNAME}.ttf..."
 addsvg svg_glyphs "${FONTNAME}.ttf"

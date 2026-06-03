@@ -6,6 +6,7 @@ import vtracer
 import subprocess
 import argparse
 from PIL import Image
+import shutil
 
 from config import CONFIG
 
@@ -166,10 +167,14 @@ def wrap_png_to_svg(png_path, svg_output_path, width=150, height=150, target_upm
         ET.indent(tree, space="  ")
         tree.write(temp_svg_path, encoding="utf-8", xml_declaration=True)
         normalized_svg_path = normalize_svg_root(temp_svg_path)
+        
         try:
-            subprocess.run(
+            result = subprocess.run(
                 ["./svgcleaner", normalized_svg_path, svg_output_path], check=True
             )
+            # If svgcleaner failed or didn't produce output, fall back to copying
+            if result.returncode != 0 or not os.path.exists(svg_output_path):
+                shutil.copy(normalized_svg_path, svg_output_path)
         finally:
             if os.path.exists(normalized_svg_path):
                 os.remove(normalized_svg_path)
