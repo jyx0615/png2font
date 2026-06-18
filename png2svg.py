@@ -43,21 +43,6 @@ def create_empty_svg(
 
 UPSCALE_FACTOR = 4  # Lanczos upscale multiplier before tracing
 
-
-def _is_near_white(color: str, threshold: int = 230) -> bool:
-    """Return True if `color` (CSS hex) is near-white."""
-    c = color.strip().lstrip("#").lower()
-    if c in ("fff", "ffffff", "white"):
-        return True
-    if len(c) == 6:
-        try:
-            r, g, b = int(c[0:2], 16), int(c[2:4], 16), int(c[4:6], 16)
-            return r >= threshold and g >= threshold and b >= threshold
-        except ValueError:
-            pass
-    return False
-
-
 def upscale_png(png_path: Path, scale: int = UPSCALE_FACTOR, alpha_threshold: int = 128) -> str:
     """Return path to a temp PNG upscaled by `scale`x using Lanczos resampling.
 
@@ -125,12 +110,7 @@ def wrap_png_to_svg(png_path, svg_output_path, width=150, height=150, target_upm
         # always have a near-white fill and can be safely stripped.
         # Non-white first paths (e.g. the purple body of a donut glyph) are left
         # untouched so we don't clip the actual glyph.
-        path_tag = f"{{{namespace}}}path" if namespace else "path"
         children = list(root)
-        if children and children[0].tag == path_tag:
-            fill = children[0].attrib.get("fill", "")
-            if _is_near_white(fill):
-                root.remove(children[0])
 
         view_box = root.attrib.get("viewBox")
         if view_box:
