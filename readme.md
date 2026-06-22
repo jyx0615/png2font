@@ -12,6 +12,8 @@ Before running anything else, install FontForge first. The project depends on th
 conda create -n genFont python=3.11 -y
 conda activate genFont
 pip install -r requirements.txt
+cd nanoemoji
+pip install -e .
 
 ./run.sh [PNG_FOLDER] [FONTNAME]
 # Examples

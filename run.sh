@@ -54,3 +54,7 @@ echo "Embedding SVGs into ${FONTNAME}.ttf..."
 addsvg svg_glyphs "${FONTNAME}.ttf"
 
 echo "Done. Output: ${FONTNAME}.ttf"
+
+cd nanoemoji
+echo "Running nanoemoji to generate COLV1 font...(may take more than 10 minutes)"
+maximum_color ../${FONTNAME}.ttf
