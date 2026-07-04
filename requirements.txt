@@ -1,4 +1,8 @@
-vtracer==0.6.15
+brotli==1.2.0
+fonttools==4.63.0
 opentypesvg==1.1.5
-Pillow>=10.0.0
+packaging==26.0
+pillow==12.2.0
 tomli==2.4.1
+vtracer==0.6.15
+zopfli==0.4.3
