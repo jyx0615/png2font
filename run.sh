@@ -58,3 +58,51 @@ echo "Done. Output: ${FONTNAME}.ttf"
 cd nanoemoji
 echo "Running nanoemoji to generate COLV1 font...(may take more than 10 minutes)"
 maximum_color ../${FONTNAME}.ttf
+cd ..
+
+COLOR_TTF="build/Font.ttf"
+if [ -f "nanoemoji/${COLOR_TTF}" ]; then
+	cp "nanoemoji/${COLOR_TTF}" "${FONTNAME}.ttf"
+	echo "Applied maximum_color output to ${FONTNAME}.ttf"
+else
+	echo "Warning: nanoemoji/${COLOR_TTF} not found; keeping non-color ${FONTNAME}.ttf"
+fi
+
+# Shrink a WOFF/WOFF2 in place: keep every codepoint (--unicodes="*") but drop
+# the redundant color tables (SVG, sbix, CBDT/CBLC bitmaps, FFTM) so only
+# COLRv1 remains.
+subset_drop_unused_tables() {
+	local font_path="$1"
+	local flavor="$2"
+	local subset_path="${font_path}.subset"
+	if pyftsubset "${font_path}" \
+		--unicodes="*" \
+		--drop-tables=SVG,sbix,CBDT,CBLC,FFTM \
+		--flavor="${flavor}" \
+		--output-file="${subset_path}"; then
+		mv "${subset_path}" "${font_path}"
+	else
+		echo "Warning: pyftsubset failed for ${font_path}; keeping unsubsetted file"
+		rm -f "${subset_path}"
+	fi
+}
+
+# Convert to WOFF and WOFF2 in parallel — both just read the same TTF and
+# don't depend on each other, so there's no reason to serialize them.
+echo "Converting ${FONTNAME}.ttf to WOFF and WOFF2..."
+
+(
+	ttf2woff "${FONTNAME}.ttf" "${FONTNAME}.woff" \
+		&& subset_drop_unused_tables "${FONTNAME}.woff" woff
+) &
+woff_pid=$!
+
+(
+	ttf2woff2 < "${FONTNAME}.ttf" > "${FONTNAME}.woff2" \
+		&& subset_drop_unused_tables "${FONTNAME}.woff2" woff2
+) &
+woff2_pid=$!
+
+wait "$woff_pid" "$woff2_pid"
+
+echo "Done. Output: ${FONTNAME}.ttf, ${FONTNAME}.woff, ${FONTNAME}.woff2"
